@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#17243c">
+  <meta name="description" content="日本の運転免許証番号の桁数とチェックディジットを端末内だけで検証します。入力内容は送信・保存されません。">
+  <meta name="robots" content="noindex,nofollow">
+  <title>運転免許証番号チェッカー</title>
+  <style>
+    :root { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; color: #1d2a3d; background:#f4f6fa; font-synthesis:none; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; min-height:100dvh; background:linear-gradient(160deg,#edf2f9 0%,#f7f8fb 53%,#eef2f8 100%); }
+    header { background:#17243c; color:white; }
+    .header-inner { max-width:660px; margin:auto; padding:22px 20px 25px; }
+    .eyebrow { color:#e9bf79; text-transform:uppercase; font-size:11px; font-weight:700; letter-spacing:.14em; }
+    h1 { font-size:clamp(21px,5vw,29px); letter-spacing:.025em; line-height:1.4; margin:9px 0 7px; }
+    header p { opacity:.81; font-size:13px; line-height:1.65; margin:0; }
+    main { max-width:660px; margin:20px auto 44px; padding:0 16px; }
+    .panel { background:white; box-shadow:0 8px 30px rgba(27,39,68,.07); border:1px solid #e3e8f1; border-radius:16px; padding:clamp(18px,4vw,28px); }
+    label { display:block; font-size:15px; font-weight:750; margin-bottom:10px; }
+    .input-note { color:#586678; line-height:1.6; font-size:12px; margin:10px 0 20px; }
+    #licenseNo { display:block; width:100%; appearance:none; border:2px solid #d5dce8; border-radius:12px; background:#fff; color:#17243c; font-variant-numeric:tabular-nums; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; letter-spacing:.075em; font-size:clamp(18px,4.6vw,25px); padding:15px 13px; height:60px; outline:none; }
+    #licenseNo:focus { border-color:#356ab0; box-shadow:0 0 0 3px rgba(53,106,176,.13); }
+    #licenseNo::placeholder { color:#a0aab6; letter-spacing:0; font-family:inherit; font-size:16px; }
+    .actions { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; }
+    button { min-height:53px; padding:13px 20px; border-radius:11px; border:0; font:inherit; font-size:16px; font-weight:750; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    #checkBtn { background:#1d365a; color:white; }
+    #checkBtn:active { background:#122641; }
+    #clearBtn { background:#eaf0f7; color:#293b55; }
+    button:focus-visible { outline:3px solid #e6b360; outline-offset:2px; }
+    .result { margin-top:21px; border-radius:12px; padding:17px 15px; border:1px solid; }
+    .result[hidden] { display:none !important; }
+    .result.success { color:#13583d; background:#ecf9f1; border-color:#bce7cc; }
+    .result.failure { color:#852f2f; background:#fff1f0; border-color:#f0ccc9; }
+    .result.info { color:#594322; background:#fff8e8; border-color:#eddbb5; }
+    .result-title { margin:0 0 7px; font-size:18px; font-weight:800; }
+    .result p { margin:0 0 7px; font-size:13px; line-height:1.75; }
+    .calc { border-top:1px solid rgba(70,70,70,.14); margin-top:12px; padding-top:12px; display:grid; grid-template-columns:1fr auto; gap:8px 12px; font-size:13px; }
+    .calc .value { font-variant-numeric:tabular-nums; text-align:right; font-weight:700; }
+    .small { margin:17px 0 0; font-size:12px; line-height:1.85; color:#566679; }
+    details { margin:15px 0 0; color:#4b5a6d; font-size:13px; line-height:1.8; }
+    summary { cursor:pointer; font-weight:700; color:#283c59; padding:8px 0; }
+    details p { margin:4px 0 12px; }
+    .bottom { color:#697789; text-align:center; font-size:11px; margin:19px 0 30px; line-height:1.7; }
+    .bottom a { color:#365b88; }
+    @media(max-width:370px) { .actions{grid-template-columns:1fr;} #clearBtn{min-height:45px;} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="eyebrow">LOCAL CHECK · NO UPLOAD</div>
+      <h1>運転免許証番号チェッカー</h1>
+      <p>日本の運転免許証番号が、12桁の形式と検査数字に一致しているか確認します。</p>
+    </div>
+  </header>
+  <main>
+    <section class="panel" aria-label="番号の検証">
+      <label for="licenseNo">免許証番号（12桁）</label>
+      <input id="licenseNo" type="text" inputmode="numeric" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="数字12桁を入力" maxlength="24" aria-describedby="inputInfo" />
+      <p class="input-note" id="inputInfo">半角・全角数字に対応。空白やハイフンを含めても確認できます。入力中に自動判定はしません。</p>
+      <div class="actions">
+        <button type="button" id="checkBtn">チェック開始</button>
+        <button type="button" id="clearBtn">クリア</button>
+      </div>
+      <section id="result" class="result" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <h2 class="result-title" id="resultTitle"></h2>
+        <p id="resultMessage"></p>
+        <div class="calc" id="calcDetail" hidden>
+          <span>先頭10桁の加重合計</span><span class="value" id="sumValue"></span>
+          <span>11で割った余り</span><span class="value" id="remainderValue"></span>
+          <span>期待される11桁目</span><span class="value" id="expectedValue"></span>
+          <span>実際の11桁目</span><span class="value" id="actualValue"></span>
+          <span>12桁目（再交付記号等）</span><span class="value" id="reissueValue"></span>
+        </div>
+      </section>
+      <p class="small">🔒 入力した番号はこのブラウザ内でのみ計算します。番号の送信・保存、アクセス解析、外部スクリプトの読み込みは行いません。</p>
+      <details>
+        <summary>検証の仕組みと注意点</summary>
+        <p>先頭10桁に係数 5, 4, 3, 2, 7, 6, 5, 4, 3, 2 を順に掛けて合計し、モジュラス11方式で11桁目の検査数字を求めます。12桁目は再交付記号等です。</p>
+        <p>このツールが判定するのは「12桁の数字であること」と「11桁目の計算上の一致」だけです。公安委員会コードの実在性、番号の発行・有効性、運転資格、本人確認は判定できません。</p>
+        <p>仕様：<a href="https://www.npa.go.jp/laws/notification/menkyo20250310_76.pdf" rel="noopener noreferrer" target="_blank">警察庁「運転免許証の番号等の形式及び内容について」（2025年）</a></p>
+      </details>
+    </section>
+    <div class="bottom">非公式の番号形式チェックツールです。警察庁・公安委員会とは関係ありません。<br>Version 1.0 · 2026</div>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      const input = document.getElementById('licenseNo');
+      const checkBtn = document.getElementById('checkBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const result = document.getElementById('result');
+      const detail = document.getElementById('calcDetail');
+      const title = document.getElementById('resultTitle');
+      const message = document.getElementById('resultMessage');
+      const weights = [5,4,3,2,7,6,5,4,3,2];
+
+      const digitsOnly = (value) => value
+        .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+        .replace(/[\s\u3000\-‐‑‒–—―−ー－]/g, '');
+
+      function show(type, heading, detailText, values) {
+        result.className = 'result ' + type;
+        title.textContent = heading;
+        message.textContent = detailText;
+        detail.hidden = !values;
+        if (values) {
+          document.getElementById('sumValue').textContent = values.sum;
+          document.getElementById('remainderValue').textContent = values.remainder;
+          document.getElementById('expectedValue').textContent = values.expected;
+          document.getElementById('actualValue').textContent = values.actual;
+          document.getElementById('reissueValue').textContent = values.reissue;
+        }
+        result.hidden = false;
+      }
+
+      function check() {
+        const str = digitsOnly(input.value);
+        if (!/^\d{12}$/.test(str)) {
+          show('info', '入力形式を確認してください', '半角・全角の数字12桁を入力してから「チェック開始」を押してください。', null);
+          return;
+        }
+        const sum = str.slice(0,10).split('').reduce((acc, n, i) => acc + Number(n) * weights[i], 0);
+        const remainder = sum % 11;
+        const expected = (11 - remainder) % 10;
+        const actual = Number(str.charAt(10));
+        const matched = actual === expected;
+        show(
+          matched ? 'success' : 'failure',
+          matched ? '✓ チェックディジット一致' : '× チェックディジット不一致',
+          matched ? '番号の桁数と検査数字に計算上の矛盾はありません。ただし、番号が実在・有効であることは証明できません。' : '11桁目が計算結果と一致しません。入力間違いがないか確認してください。',
+          { sum, remainder, expected, actual, reissue: str.charAt(11) }
+        );
+      }
+
+      checkBtn.addEventListener('click', check);
+      clearBtn.addEventListener('click', () => { input.value = ''; result.hidden = true; input.focus(); });
+      input.addEventListener('input', () => { result.hidden = true; });
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); check(); } });
+    })();
+  </script>
+</body>
+</html>
